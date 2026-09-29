@@ -1,0 +1,109 @@
+{
+  "total_test_cases": 120,
+  "conditions_tested": [
+    "low",
+    "medium",
+    "high",
+    "random"
+  ],
+  "dijkstra": {
+    "count": 120,
+    "avg_travel_time": 23.32,
+    "avg_distance": 11.24,
+    "avg_traffic": 49.46,
+    "avg_nodes_explored": 27.21,
+    "avg_execution_time_ms": 0.0773,
+    "success_rate": 100.0
+  },
+  "astar": {
+    "count": 120,
+    "avg_travel_time": 23.32,
+    "avg_distance": 11.24,
+    "avg_traffic": 49.46,
+    "avg_nodes_explored": 18.58,
+    "avg_execution_time_ms": 0.1638,
+    "success_rate": 100.0
+  },
+  "by_condition": {
+    "low": {
+      "dijkstra": {
+        "count": 30,
+        "avg_travel_time": 16.31,
+        "avg_distance": 10.02,
+        "avg_traffic": 17.07,
+        "avg_nodes_explored": 24.5,
+        "avg_execution_time_ms": 0.071,
+        "success_rate": 100.0
+      },
+      "astar": {
+        "count": 30,
+        "avg_travel_time": 16.31,
+        "avg_distance": 10.02,
+        "avg_traffic": 17.07,
+        "avg_nodes_explored": 15.77,
+        "avg_execution_time_ms": 0.1607,
+        "success_rate": 100.0
+      }
+    },
+    "medium": {
+      "dijkstra": {
+        "count": 30,
+        "avg_travel_time": 25.58,
+        "avg_distance": 12.44,
+        "avg_traffic": 48.67,
+        "avg_nodes_explored": 29.37,
+        "avg_execution_time_ms": 0.0804,
+        "success_rate": 100.0
+      },
+      "astar": {
+        "count": 30,
+        "avg_travel_time": 25.58,
+        "avg_distance": 12.44,
+        "avg_traffic": 48.67,
+        "avg_nodes_explored": 20.27,
+        "avg_execution_time_ms": 0.1559,
+        "success_rate": 100.0
+      }
+    },
+    "high": {
+      "dijkstra": {
+        "count": 30,
+        "avg_travel_time": 28.53,
+        "avg_distance": 11.07,
+        "avg_traffic": 84.91,
+        "avg_nodes_explored": 27.5,
+        "avg_execution_time_ms": 0.0776,
+        "success_rate": 100.0
+      },
+      "astar": {
+        "count": 30,
+        "avg_travel_time": 28.53,
+        "avg_distance": 11.07,
+        "avg_traffic": 84.91,
+        "avg_nodes_explored": 18.57,
+        "avg_execution_time_ms": 0.1782,
+        "success_rate": 100.0
+      }
+    },
+    "random": {
+      "dijkstra": {
+        "count": 30,
+        "avg_travel_time": 22.87,
+        "avg_distance": 11.44,
+        "avg_traffic": 47.21,
+        "avg_nodes_explored": 27.47,
+        "avg_execution_time_ms": 0.0805,
+        "success_rate": 100.0
+      },
+      "astar": {
+        "count": 30,
+        "avg_travel_time": 22.87,
+        "avg_distance": 11.44,
+        "avg_traffic": 47.21,
+        "avg_nodes_explored": 19.73,
+        "avg_execution_time_ms": 0.1605,
+        "success_rate": 100.0
+      }
+    }
+  }
+}
