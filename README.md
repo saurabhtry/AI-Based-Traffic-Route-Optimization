@@ -19,55 +19,39 @@ This project implements an interactive full-stack traffic routing application de
 
 ## 2. Road Network Architecture
 
-The road network consists of exactly **50 nodes** arranged in a $10 \times 5$ Cartesian grid:
+The road network consists of exactly **50 nodes** arranged in a 10 × 5 Cartesian grid:
 
 ```text
 Row 0:   0 ─── 1 ─── 2 ─── 3 ─── 4 ─── 5 ─── 6 ─── 7 ─── 8 ─── 9
-          │     │     │     │     │     │     │     │     │     │
+         │     │     │     │     │     │     │     │     │     │
 Row 1:  10 ── 11 ── 12 ── 13 ── 14 ── 15 ── 16 ── 17 ── 18 ── 19
-          │     │     │     │     │     │     │     │     │     │
+         │     │     │     │     │     │     │     │     │     │
 Row 2:  20 ── 21 ── 22 ── 23 ── 24 ── 25 ── 26 ── 27 ── 28 ── 29
-          │     │     │     │     │     │     │     │     │     │
+         │     │     │     │     │     │     │     │     │     │
 Row 3:  30 ── 31 ── 32 ── 33 ── 34 ── 35 ── 36 ── 37 ── 38 ── 39
-          │     │     │     │     │     │     │     │     │     │
+         │     │     │     │     │     │     │     │     │     │
 Row 4:  40 ── 41 ── 42 ── 43 ── 44 ── 45 ── 46 ── 47 ── 48 ── 49
 ```
 
-- **Coordinates**: Each node has coordinates $x = \text{col} \times 100 + 50$, $y = \text{row} \times 100 + 50$.
+- **Coordinates**: Each node has coordinates x = col × 100 + 50, y = row × 100 + 50.
 - **Edges**: Bidirectional road connections between adjacent grid nodes plus 6 arterial expressway bypasses.
 - **Road Attributes**:
-  - Distance: $1.0\text{ km} - 5.0\text{ km}$
-  - Speed Limit: $30\text{ km/h} - 70\text{ km/h}$
-  - Road Capacity: $500 - 2000\text{ veh/h}$
-  - Default Traffic Density: $20\%$ ($0.20$)
+  - Distance: **1.0 km - 5.0 km**
+  - Speed Limit: **30 km/h - 70 km/h**
+  - Road Capacity: **500 - 2000 veh/h**
+  - Default Traffic Density: **20% (0.20)**
 
 ---
 
 ## 3. Traffic Cost Model
 
-$$
-\text{base\_travel\_time}
-=
-\left(\frac{\text{distance}}{\text{speed}}\right)
-\times 60
-\quad (\text{minutes})
-$$
+```text
+base_travel_time = (distance / speed) * 60  [in minutes]
 
-$$
-\text{traffic\_factor}
-=
-1.0 + \text{traffic\_density}
-\quad
-(\text{where } \text{traffic\_density} \in [0.0,1.0])
-$$
+traffic_factor = 1.0 + traffic_density      [where density is 0.0 to 1.0]
 
-$$
-\text{effective\_travel\_time}
-=
-\text{base\_travel\_time}
-\times
-\text{traffic\_factor}
-$$
+effective_travel_time = base_travel_time * traffic_factor
+```
 
 ---
 
@@ -78,34 +62,27 @@ Both algorithms are implemented from scratch in pure Python without third-party 
 ### Dijkstra's Algorithm
 
 - Min-priority queue using `heapq`
-- Track accumulated cost $g(n)$
+- Track accumulated cost: g(n)
 - Dynamic predecessor map for route reconstruction
 - Tracks total nodes explored and execution runtime in milliseconds
 
 ### A* Search
 
-- Evaluation function: $f(n)=g(n)+h(n)$
-- $g(n)$: Accumulated travel time in minutes
-- $h(n)$: Admissible heuristic based on Euclidean spatial grid distance scaled by the network's fastest travel time per grid unit:
+- Evaluation function: f(n) = g(n) + h(n)
+- g(n): Accumulated travel time in minutes
+- h(n): Admissible heuristic based on Euclidean spatial grid distance scaled by the network's fastest travel time per grid unit:
 
-$$
-h(n)
-=
-\sqrt{(\Delta x)^2 + (\Delta y)^2}
-\times
-\min_e
-\left(
-\frac{\text{time}(e)}{\text{grid\_dist}(e)}
-\right)
-$$
+```text
+h(n) = √((Δx)² + (Δy)²) × min( time(e) / grid_dist(e) )
+```
 
-- Guarantees $h(n) \le h^*(n)$ (admissibility), ensuring optimal path discovery with reduced node expansion.
+- Guarantees h(n) ≤ h*(n) (admissibility), ensuring optimal path discovery with reduced node expansion.
 
 ---
 
 ## 5. Quantitative Experimental Results (120 Controlled Scenarios)
 
-Experiments were executed across 120 test cases evaluating Low ($0-30\%$), Medium ($31-70\%$), High ($71-100\%$), and Random congestion distributions.
+Experiments were executed across 120 test cases evaluating Low (0-30%), Medium (31-70%), High (71-100%), and Random congestion distributions.
 
 ### Overall Benchmark Summary
 
@@ -122,10 +99,10 @@ Experiments were executed across 120 test cases evaluating Low ($0-30\%$), Mediu
 
 | Traffic Level | Dijkstra Explored | A* Explored | Exploration Reduction |
 |---|---:|---:|---:|
-| **Low ($0-30\%$)** | 24.50 nodes | 15.77 nodes | -35.6% |
-| **Medium ($31-70\%$)** | 29.37 nodes | 20.27 nodes | -31.0% |
-| **High ($71-100\%$)** | 27.50 nodes | 18.57 nodes | -32.5% |
-| **Random ($0-100\%$)** | 27.47 nodes | 19.73 nodes | -28.2% |
+| **Low (0-30%)** | 24.50 nodes | 15.77 nodes | -35.6% |
+| **Medium (31-70%)** | 29.37 nodes | 20.27 nodes | -31.0% |
+| **High (71-100%)** | 27.50 nodes | 18.57 nodes | -32.5% |
+| **Random (0-100%)** | 27.47 nodes | 19.73 nodes | -28.2% |
 
 ### Generated Comparison Charts
 
@@ -167,7 +144,7 @@ To run the Vite development server independently:
 
 ```bash
 cd frontend
-npm.cmd run dev
+npm run dev
 ```
 
 Open:
@@ -201,11 +178,11 @@ Road networks naturally model as graphs where intersections are nodes and roads 
 
 ### 3. What is Dijkstra's Algorithm?
 
-Dijkstra's Algorithm is an uninformed graph search algorithm that explores nodes in increasing order of accumulated path cost $g(n)$ from the start node using a min-priority queue.
+Dijkstra's Algorithm is an uninformed graph search algorithm that explores nodes in increasing order of accumulated path cost g(n) from the start node using a min-priority queue.
 
 ### 4. What is A* Search?
 
-A* is an informed search algorithm that evaluates nodes using $f(n)=g(n)+h(n)$, combining the known cost $g(n)$ from the start with a heuristic estimate $h(n)$ to the goal.
+A* is an informed search algorithm that evaluates nodes using f(n) = g(n) + h(n), combining the known cost g(n) from the start with a heuristic estimate h(n) to the goal.
 
 ### 5. What is the difference between Dijkstra and A*?
 
@@ -217,34 +194,27 @@ A heuristic is an estimate of the remaining cost from the current state to the g
 
 ### 7. What heuristic did you use?
 
-We used Euclidean coordinate distance scaled by the network's maximum possible speed:
+We used Euclidean coordinate distance scaled by the minimum travel-time-per-distance value in the network:
 
-$$
-h(n)
-=
-\text{distance}(n,\text{goal})
-\times
-\min_e
-\left(
-\frac{\text{cost}(e)}{\text{distance}(e)}
-\right)
-$$
+```text
+h(n) = distance(n, goal) × min_e( cost(e) / distance(e) )
+```
 
 ### 8. Why can A* explore fewer nodes?
 
-The heuristic $h(n)$ biases node priority toward the goal, so nodes leading away from the destination receive higher $f$-values and are pushed down the priority queue.
+The heuristic h(n) biases node priority toward the goal, so nodes leading away from the destination receive higher f-values and are pushed down the priority queue.
 
 ### 9. Can Dijkstra and A* return the same route?
 
-Yes. When the heuristic is admissible ($h(n) \le h^*(n)$), A* is guaranteed to return the exact same optimal route cost as Dijkstra.
+Yes. When the heuristic is admissible (h(n) ≤ h*(n)), A* is guaranteed to return the exact same optimal route cost as Dijkstra.
 
 ### 10. How is traffic represented?
 
-Traffic density is represented as a percentage from $0\%$ (free-flow) to $100\%$ (severe congestion) for each road edge.
+Traffic density is represented as a percentage from 0% (free-flow) to 100% (severe congestion) for each road edge.
 
 ### 11. How does traffic density affect edge cost?
 
-Effective travel time is multiplied by $(1.0 + \text{traffic\_density})$. A road with $100\%$ traffic takes twice as long to traverse as a road with $0\%$ traffic.
+Effective travel time is multiplied by (1.0 + traffic_density). A road with 100% traffic takes twice as long to traverse as a road with 0% traffic.
 
 ### 12. Why does the user manually enter traffic?
 
@@ -252,7 +222,7 @@ Manual control allows examiners and users to test congestion scenarios, simulate
 
 ### 13. Why did you use 50 nodes?
 
-A 50-node $10 \times 5$ grid is large enough to demonstrate realistic multi-path routing choices while remaining visually clean and easy to explain in a viva.
+A 50-node 10 × 5 grid is large enough to demonstrate realistic multi-path routing choices while remaining visually clean and easy to explain in a viva.
 
 ### 14. How did you compare the algorithms fairly?
 
@@ -273,7 +243,7 @@ Dynamic Traffic Rerouting: Real-time detection of traffic updates along the acti
 
 ### 17. How does dynamic rerouting work?
 
-When an edge density changes, the backend recalculates `effective_travel_time_min`, rebuilds the adjacency list, executes the routing search, and returns comparison metrics showing whether the route changed.
+When an edge density changes, the backend recalculates effective_travel_time, rebuilds the adjacency list, executes the routing search, and returns comparison metrics showing whether the route changed.
 
 ### 18. What happens when traffic on the selected route increases?
 
