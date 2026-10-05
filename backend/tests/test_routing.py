@@ -34,6 +34,10 @@ def test_astar_efficiency():
     res_d = dijkstra_search(net, 0, 49)
     res_a = astar_search(net, 0, 49)
     assert res_a["nodes_explored"] <= res_d["nodes_explored"]
+    assert len(res_d["explored_nodes"]) == res_d["nodes_explored"]
+    assert len(res_a["explored_nodes"]) == res_a["nodes_explored"]
+    assert res_d["explored_nodes"][0] == 0
+    assert res_a["explored_nodes"][0] == 0
 
 def test_dynamic_rerouting_behavior():
     net = RoadNetwork()

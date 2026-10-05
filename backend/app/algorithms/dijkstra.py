@@ -14,6 +14,7 @@ def dijkstra_search(network, start_node: int, end_node: int) -> dict[str, Any]:
             "travel_time": 0.0,
             "average_traffic": 0.0,
             "nodes_explored": 0,
+            "explored_nodes": [start_node],
             "execution_time_ms": round((time.perf_counter() - start_time) * 1000.0, 4)
         }
 
@@ -23,6 +24,7 @@ def dijkstra_search(network, start_node: int, end_node: int) -> dict[str, Any]:
     distances: dict[int, float] = {start_node: 0.0}
     parents: dict[int, int | None] = {start_node: None}
     visited = set()
+    explored_nodes: list[int] = []
     nodes_explored = 0
 
     while pq:
@@ -31,6 +33,7 @@ def dijkstra_search(network, start_node: int, end_node: int) -> dict[str, Any]:
         if u in visited:
             continue
         visited.add(u)
+        explored_nodes.append(u)
         nodes_explored += 1
 
         if u == end_node:
@@ -55,6 +58,7 @@ def dijkstra_search(network, start_node: int, end_node: int) -> dict[str, Any]:
             "travel_time": 0.0,
             "average_traffic": 0.0,
             "nodes_explored": nodes_explored,
+            "explored_nodes": explored_nodes,
             "execution_time_ms": exec_time_ms
         }
 
@@ -85,5 +89,6 @@ def dijkstra_search(network, start_node: int, end_node: int) -> dict[str, Any]:
         "travel_time": round(total_time, 2),
         "average_traffic": avg_traffic,
         "nodes_explored": nodes_explored,
+        "explored_nodes": explored_nodes,
         "execution_time_ms": exec_time_ms
     }

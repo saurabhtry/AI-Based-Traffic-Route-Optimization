@@ -25,6 +25,7 @@ export default function App() {
   const [activeRoute, setActiveRoute] = useState(null);
   const [singleResult, setSingleResult] = useState(null);
   const [compareResult, setCompareResult] = useState(null);
+  const [exploredOverlay, setExploredOverlay] = useState("both");
   const [selectedRoad, setSelectedRoad] = useState(null);
   const [rerouteData, setRerouteData] = useState(null);
   const [showExperiments, setShowExperiments] = useState(false);
@@ -103,6 +104,7 @@ export default function App() {
       setSingleResult(res);
       setActiveRoute(res.route);
       setCompareResult(null);
+      setExploredOverlay("single");
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
@@ -130,6 +132,7 @@ export default function App() {
       setCompareResult(res);
       setSingleResult(null);
       setActiveRoute(res.astar.route);
+      setExploredOverlay("both");
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
@@ -274,6 +277,10 @@ export default function App() {
             activeRoute={activeRoute}
             onNodeClick={handleNodeClick}
             onRoadClick={handleRoadClick}
+            singleResult={singleResult}
+            compareResult={compareResult}
+            exploredOverlay={exploredOverlay}
+            setExploredOverlay={setExploredOverlay}
           />
         </div>
 

@@ -44,6 +44,7 @@ class RouteResult(BaseModel):
     travel_time: float
     average_traffic: float
     nodes_explored: int
+    explored_nodes: list[int] = Field(default_factory=list)
     execution_time_ms: float
 
 class CompareResult(BaseModel):

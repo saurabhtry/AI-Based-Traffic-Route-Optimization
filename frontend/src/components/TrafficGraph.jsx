@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Cpu, Layers, CheckCircle2 } from "lucide-react";
 
 export default function TrafficGraph({
   nodes,
@@ -8,6 +9,10 @@ export default function TrafficGraph({
   activeRoute,
   onNodeClick,
   onRoadClick,
+  singleResult,
+  compareResult,
+  exploredOverlay = "both",
+  setExploredOverlay,
 }) {
   const [hoveredRoad, setHoveredRoad] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
@@ -30,8 +35,143 @@ export default function TrafficGraph({
   const nodeMap = new Map();
   nodes.forEach((n) => nodeMap.set(n.id, n));
 
+  const dijkstraExploredList = compareResult?.dijkstra?.explored_nodes || [];
+  const astarExploredList = compareResult?.astar?.explored_nodes || [];
+  const singleExploredList = singleResult?.explored_nodes || [];
+
+  const dijkstraExploredSet = new Set(dijkstraExploredList);
+  const astarExploredSet = new Set(astarExploredList);
+  const singleExploredSet = new Set(singleExploredList);
+
+  const prunedList = dijkstraExploredList.filter((n) => !astarExploredSet.has(n));
+  const prunedSet = new Set(prunedList);
+  const bothSet = new Set(dijkstraExploredList.filter((n) => astarExploredSet.has(n)));
+
+  const dCount = compareResult?.dijkstra?.nodes_explored ?? 0;
+  const aCount = compareResult?.astar?.nodes_explored ?? 0;
+  const diffCount = Math.max(0, dCount - aCount);
+  const pctSaved = dCount > 0 ? Math.round((diffCount / dCount) * 100) : 0;
+
   return (
     <div className="graph-container">
+      {/* Exploration Header & Overlay Controls */}
+      {compareResult && (
+        <div className="graph-exploration-bar">
+          <div className="exploration-summary">
+            <Cpu size={16} className="text-accent" />
+            <span className="exp-label">
+              Nodes Explored (Node {compareResult.start} ➔ {compareResult.end}):
+            </span>
+            <span className="exp-badge dijkstra">
+              Dijkstra: <strong>{dCount}</strong> / 50 nodes
+            </span>
+            <span className="exp-badge astar">
+              A* Search: <strong>{aCount}</strong> / 50 nodes
+            </span>
+            <span className="exp-badge diff">
+              A* pruned <strong>{diffCount}</strong> nodes (-{pctSaved}%)
+            </span>
+          </div>
+
+          <div className="exploration-toggle-group">
+            <span className="toggle-label"><Layers size={13} /> Overlay:</span>
+            <button
+              type="button"
+              className={`toggle-btn ${exploredOverlay === "route" ? "active" : ""}`}
+              onClick={() => setExploredOverlay && setExploredOverlay("route")}
+              title="Show only the optimal shortest path"
+            >
+              Route Only
+            </button>
+            <button
+              type="button"
+              className={`toggle-btn dijkstra ${exploredOverlay === "dijkstra" ? "active" : ""}`}
+              onClick={() => setExploredOverlay && setExploredOverlay("dijkstra")}
+              title="Highlight all nodes explored by Dijkstra"
+            >
+              Dijkstra ({dCount})
+            </button>
+            <button
+              type="button"
+              className={`toggle-btn astar ${exploredOverlay === "astar" ? "active" : ""}`}
+              onClick={() => setExploredOverlay && setExploredOverlay("astar")}
+              title="Highlight all nodes explored by A* Search"
+            >
+              A* Search ({aCount})
+            </button>
+            <button
+              type="button"
+              className={`toggle-btn both ${exploredOverlay === "both" ? "active" : ""}`}
+              onClick={() => setExploredOverlay && setExploredOverlay("both")}
+              title="Highlight common nodes vs pruned nodes"
+            >
+              Both / Pruned
+            </button>
+          </div>
+        </div>
+      )}
+
+      {singleResult && !compareResult && (
+        <div className="graph-exploration-bar">
+          <div className="exploration-summary">
+            <Cpu size={16} className="text-accent" />
+            <span className="exp-label">
+              Nodes Explored (Node {singleResult.route[0]} ➔ {singleResult.route[singleResult.route.length - 1]}):
+            </span>
+            <span className="exp-badge single">
+              {singleResult.algorithm === "astar" ? "A* Search" : "Dijkstra"}:{" "}
+              <strong>{singleResult.nodes_explored}</strong> / 50 nodes ({Math.round((singleResult.nodes_explored / 50) * 100)}% of network)
+            </span>
+          </div>
+
+          <div className="exploration-toggle-group">
+            <button
+              type="button"
+              className={`toggle-btn ${exploredOverlay === "route" ? "active" : ""}`}
+              onClick={() => setExploredOverlay && setExploredOverlay("route")}
+            >
+              Route Only
+            </button>
+            <button
+              type="button"
+              className={`toggle-btn single ${exploredOverlay === "single" ? "active" : ""}`}
+              onClick={() => setExploredOverlay && setExploredOverlay(exploredOverlay === "single" ? "route" : "single")}
+            >
+              {exploredOverlay === "single" ? "Hide" : "Show"} Explored ({singleResult.nodes_explored} nodes)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Exploration Legend when overlay is enabled */}
+      {compareResult && exploredOverlay !== "route" && (
+        <div className="graph-overlay-legend">
+          {exploredOverlay === "dijkstra" && (
+            <span className="legend-tag dijkstra">
+              <span className="tag-dot dijkstra"></span> Dijkstra Explored Nodes ({dCount})
+            </span>
+          )}
+          {exploredOverlay === "astar" && (
+            <span className="legend-tag astar">
+              <span className="tag-dot astar"></span> A* Explored Nodes ({aCount})
+            </span>
+          )}
+          {exploredOverlay === "both" && (
+            <>
+              <span className="legend-tag both">
+                <span className="tag-dot both"></span> Explored by Both ({bothSet.size})
+              </span>
+              <span className="legend-tag pruned">
+                <span className="tag-dot pruned"></span> Pruned by A* (Only Dijkstra Explored) ({prunedSet.size})
+              </span>
+            </>
+          )}
+          <span className="legend-tag route">
+            <span className="tag-dot route"></span> Optimal Shortest Path
+          </span>
+        </div>
+      )}
+
       <svg
         className="network-svg"
         viewBox="0 0 1020 520"
@@ -144,6 +284,35 @@ export default function TrafficGraph({
             const isInRoute = activeRoute && activeRoute.includes(node.id);
             const isHovered = hoveredNode === node.id;
 
+            // Exploration state
+            let isExplored = false;
+            let explorationType = null; // 'dijkstra', 'astar', 'both', 'pruned', 'single'
+
+            if (!isStart && !isEnd && !isInRoute) {
+              if (compareResult) {
+                if (exploredOverlay === "dijkstra" && dijkstraExploredSet.has(node.id)) {
+                  isExplored = true;
+                  explorationType = "dijkstra";
+                } else if (exploredOverlay === "astar" && astarExploredSet.has(node.id)) {
+                  isExplored = true;
+                  explorationType = "astar";
+                } else if (exploredOverlay === "both") {
+                  if (prunedSet.has(node.id)) {
+                    isExplored = true;
+                    explorationType = "pruned";
+                  } else if (bothSet.has(node.id)) {
+                    isExplored = true;
+                    explorationType = "both";
+                  }
+                }
+              } else if (singleResult && exploredOverlay === "single") {
+                if (singleExploredSet.has(node.id)) {
+                  isExplored = true;
+                  explorationType = "single";
+                }
+              }
+            }
+
             let fillColor = "#1e293b";
             let strokeColor = "#64748b";
             let radius = 17;
@@ -160,6 +329,24 @@ export default function TrafficGraph({
               fillColor = "#0284c7";
               strokeColor = "#38bdf8";
               radius = 18;
+            } else if (isExplored) {
+              if (explorationType === "dijkstra") {
+                fillColor = "#451a03";
+                strokeColor = "#f59e0b";
+              } else if (explorationType === "astar") {
+                fillColor = "#1e1b4b";
+                strokeColor = "#818cf8";
+              } else if (explorationType === "both") {
+                fillColor = "#2e1065";
+                strokeColor = "#c084fc";
+              } else if (explorationType === "pruned") {
+                fillColor = "#431407";
+                strokeColor = "#f97316";
+              } else if (explorationType === "single") {
+                const isA = singleResult?.algorithm === "astar";
+                fillColor = isA ? "#1e1b4b" : "#451a03";
+                strokeColor = isA ? "#818cf8" : "#f59e0b";
+              }
             } else if (isHovered) {
               fillColor = "#334155";
               strokeColor = "#94a3b8";
@@ -183,6 +370,20 @@ export default function TrafficGraph({
                     stroke={isStart ? "#10b981" : "#ef4444"}
                     strokeWidth={2}
                     className="node-ring-pulse"
+                  />
+                )}
+
+                {/* Explored Node Halo / Pruned Dash Ring */}
+                {isExplored && (
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={radius + 4}
+                    fill="none"
+                    stroke={explorationType === "pruned" ? "#f97316" : strokeColor}
+                    strokeWidth={explorationType === "pruned" ? 2 : 1.5}
+                    strokeDasharray={explorationType === "pruned" ? "3,3" : undefined}
+                    opacity={0.85}
                   />
                 )}
 
@@ -218,6 +419,20 @@ export default function TrafficGraph({
                     fill={isStart ? "#34d399" : "#f87171"}
                   >
                     {isStart ? "START" : "DEST"}
+                  </text>
+                )}
+
+                {/* Pruned indicator tag */}
+                {isExplored && explorationType === "pruned" && (
+                  <text
+                    x={node.x}
+                    y={node.y - 22}
+                    textAnchor="middle"
+                    fontSize={7.5}
+                    fontWeight="700"
+                    fill="#fb923c"
+                  >
+                    PRUNED
                   </text>
                 )}
               </g>

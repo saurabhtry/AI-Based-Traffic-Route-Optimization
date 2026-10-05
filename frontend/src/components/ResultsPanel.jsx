@@ -14,10 +14,15 @@ export default function ResultsPanel({ singleResult, compareResult }) {
   if (compareResult) {
     const d = compareResult.dijkstra;
     const a = compareResult.astar;
-    const nodeDiff = d.nodes_explored - a.nodes_explored;
+    const nodeDiff = Math.max(0, d.nodes_explored - a.nodes_explored);
     const nodeReductionPct = d.nodes_explored > 0 
       ? Math.round((nodeDiff / d.nodes_explored) * 100) 
       : 0;
+
+    const dijkstraExplored = d.explored_nodes || [];
+    const astarExplored = a.explored_nodes || [];
+    const astarSet = new Set(astarExplored);
+    const prunedNodes = dijkstraExplored.filter((n) => !astarSet.has(n));
 
     return (
       <div className="results-card">
@@ -60,12 +65,12 @@ export default function ResultsPanel({ singleResult, compareResult }) {
               </tr>
               <tr className="highlight-row">
                 <td>Nodes Explored (Search Space)</td>
-                <td className="text-warning font-bold">{d.nodes_explored} nodes</td>
-                <td className="text-success font-bold">{a.nodes_explored} nodes</td>
+                <td className="text-warning font-bold">{d.nodes_explored} nodes ({Math.round((d.nodes_explored / 50) * 100)}%)</td>
+                <td className="text-success font-bold">{a.nodes_explored} nodes ({Math.round((a.nodes_explored / 50) * 100)}%)</td>
                 <td className="text-accent font-bold">
-                  {nodeDiff >= 0 
+                  {nodeDiff > 0 
                     ? `A* explored ${nodeDiff} fewer nodes (-${nodeReductionPct}%)` 
-                    : "Similar search space"}
+                    : "Identical search space"}
                 </td>
               </tr>
               <tr>
@@ -78,9 +83,10 @@ export default function ResultsPanel({ singleResult, compareResult }) {
           </table>
         </div>
 
+        {/* Optimal Path Routes */}
         <div className="routes-comparison-summary">
           <div className="route-box">
-            <span className="route-box-title dijkstra">Dijkstra Route ({d.route.length} nodes):</span>
+            <span className="route-box-title dijkstra">Dijkstra Optimal Route ({d.route.length} nodes):</span>
             <div className="route-tags">
               {d.route.map((node, i) => (
                 <React.Fragment key={`d-${node}-${i}`}>
@@ -92,7 +98,7 @@ export default function ResultsPanel({ singleResult, compareResult }) {
           </div>
 
           <div className="route-box">
-            <span className="route-box-title astar">A* Search Route ({a.route.length} nodes):</span>
+            <span className="route-box-title astar">A* Search Optimal Route ({a.route.length} nodes):</span>
             <div className="route-tags">
               {a.route.map((node, i) => (
                 <React.Fragment key={`a-${node}-${i}`}>
@@ -103,11 +109,97 @@ export default function ResultsPanel({ singleResult, compareResult }) {
             </div>
           </div>
         </div>
+
+        {/* Detailed Explored Nodes Section */}
+        <div className="explored-nodes-section">
+          <div className="explored-section-header">
+            <Cpu size={18} className="text-accent" />
+            <h4 className="explored-section-title">
+              Nodes Explored by Both Algorithms (Moving from Node {compareResult.start} ➔ Node {compareResult.end})
+            </h4>
+          </div>
+
+          <div className="explored-grid">
+            <div className="explored-box dijkstra">
+              <div className="explored-box-header">
+                <span className="title">Dijkstra Explored Nodes ({d.nodes_explored} of 50 nodes)</span>
+                <span className="count-badge dijkstra">{Math.round((d.nodes_explored / 50) * 100)}% of network</span>
+              </div>
+              <p className="explored-box-desc">
+                Nodes visited in increasing order of travel time $g(n)$ from start:
+              </p>
+              <div className="explored-chips-container">
+                {dijkstraExplored.length > 0 ? (
+                  dijkstraExplored.map((node, idx) => (
+                    <span
+                      key={`exp-d-${node}-${idx}`}
+                      className={`explored-chip dijkstra ${d.route.includes(node) ? "in-route" : ""}`}
+                      title={d.route.includes(node) ? `Node ${node} (In Optimal Route)` : `Node ${node} (Explored)`}
+                    >
+                      <span className="step-num">{idx + 1}.</span> {node}
+                    </span>
+                  ))
+                ) : (
+                  <span className="empty-explored">No nodes explored</span>
+                )}
+              </div>
+            </div>
+
+            <div className="explored-box astar">
+              <div className="explored-box-header">
+                <span className="title">A* Search Explored Nodes ({a.nodes_explored} of 50 nodes)</span>
+                <span className="count-badge astar">{Math.round((a.nodes_explored / 50) * 100)}% of network</span>
+              </div>
+              <p className="explored-box-desc">
+                Nodes visited under heuristic guidance $f(n) = g(n) + h(n)$ towards destination:
+              </p>
+              <div className="explored-chips-container">
+                {astarExplored.length > 0 ? (
+                  astarExplored.map((node, idx) => (
+                    <span
+                      key={`exp-a-${node}-${idx}`}
+                      className={`explored-chip astar ${a.route.includes(node) ? "in-route" : ""}`}
+                      title={a.route.includes(node) ? `Node ${node} (In Optimal Route)` : `Node ${node} (Explored)`}
+                    >
+                      <span className="step-num">{idx + 1}.</span> {node}
+                    </span>
+                  ))
+                ) : (
+                  <span className="empty-explored">No nodes explored</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Pruned Nodes Summary */}
+          {prunedNodes.length > 0 && (
+            <div className="pruned-nodes-card">
+              <div className="pruned-card-header">
+                <Zap size={16} className="text-warning" />
+                <span className="pruned-title">
+                  Pruned Nodes: {prunedNodes.length} Unnecessary Nodes Bypassed by A* Search (-{nodeReductionPct}%)
+                </span>
+              </div>
+              <p className="pruned-desc">
+                Dijkstra blindly expanded these nodes away from the destination, whereas A*'s admissible heuristic correctly assigned them higher expected costs and avoided exploring them:
+              </p>
+              <div className="pruned-chips-container">
+                {prunedNodes.map((node) => (
+                  <span key={`pruned-${node}`} className="pruned-chip">
+                    Node {node}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
   const res = singleResult;
+  const explored = res.explored_nodes || [];
+
   return (
     <div className="results-card">
       <div className="results-header">
@@ -153,7 +245,7 @@ export default function ResultsPanel({ singleResult, compareResult }) {
             <span>Nodes Explored</span>
           </div>
           <div className="metric-big-value">{res.nodes_explored} <span className="unit">nodes</span></div>
-          <div className="metric-sub">Search efficiency metric</div>
+          <div className="metric-sub">{Math.round((res.nodes_explored / 50) * 100)}% of 50-node network</div>
         </div>
 
         <div className="metric-card">
@@ -167,7 +259,7 @@ export default function ResultsPanel({ singleResult, compareResult }) {
       </div>
 
       <div className="route-flow-container">
-        <span className="route-flow-label">Path Sequence:</span>
+        <span className="route-flow-label">Optimal Path Sequence:</span>
         <div className="route-flow-sequence">
           {res.route.map((node, i) => (
             <React.Fragment key={`r-${node}-${i}`}>
@@ -176,6 +268,30 @@ export default function ResultsPanel({ singleResult, compareResult }) {
               </span>
               {i < res.route.length - 1 && <span className="flow-arrow">➔</span>}
             </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Explored Nodes Sequence in Single Mode */}
+      <div className="explored-nodes-section single">
+        <div className="explored-section-header">
+          <Cpu size={18} className="text-accent" />
+          <h4 className="explored-section-title">
+            Nodes Explored in Order Moving from Node {res.route[0]} to Node {res.route[res.route.length - 1]} ({res.nodes_explored} nodes visited)
+          </h4>
+        </div>
+        <p className="explored-box-desc">
+          Sequence of nodes popped from priority queue during search:
+        </p>
+        <div className="explored-chips-container">
+          {explored.map((node, idx) => (
+            <span
+              key={`exp-s-${node}-${idx}`}
+              className={`explored-chip ${res.algorithm === "astar" ? "astar" : "dijkstra"} ${res.route.includes(node) ? "in-route" : ""}`}
+              title={res.route.includes(node) ? `Node ${node} (In Optimal Path)` : `Node ${node} (Explored)`}
+            >
+              <span className="step-num">{idx + 1}.</span> {node}
+            </span>
           ))}
         </div>
       </div>
