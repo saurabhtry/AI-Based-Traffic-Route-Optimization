@@ -19,7 +19,7 @@ This project implements an interactive full-stack traffic routing application de
 
 ## 2. Road Network Architecture
 
-The road network consists of exactly **50 nodes** arranged in a $10 \times 5$ Cartesian grid:
+The road network consists of exactly **50 nodes** arranged in a 10 × 5 Cartesian grid:
 
 ```text
 Row 0:   0 ─── 1 ─── 2 ─── 3 ─── 4 ─── 5 ─── 6 ─── 7 ─── 8 ─── 9
@@ -33,41 +33,47 @@ Row 3:  30 ── 31 ── 32 ── 33 ── 34 ── 35 ── 36 ── 37
 Row 4:  40 ── 41 ── 42 ── 43 ── 44 ── 45 ── 46 ── 47 ── 48 ── 49
 ```
 
-- **Coordinates**: Each node has coordinates $x = \text{col} \times 100 + 50$, $y = \text{row} \times 100 + 50$.
+- **Coordinates**: Each node has coordinates:
+  - `x = col × 100 + 50`
+  - `y = row × 100 + 50`
 - **Edges**: Bidirectional road connections between adjacent grid nodes plus 6 arterial expressway bypasses.
 - **Road Attributes**:
-  - Distance: $1.0\text{ km} - 5.0\text{ km}$
-  - Speed Limit: $30\text{ km/h} - 70\text{ km/h}$
-  - Road Capacity: $500 - 2000\text{ veh/h}$
-  - Default Traffic Density: $20\%$ ($0.20$)
+  - Distance: 1.0 km - 5.0 km
+  - Speed Limit: 30 km/h - 70 km/h
+  - Road Capacity: 500 - 2000 veh/h
+  - Default Traffic Density: 20% (0.20)
 
 ---
 
 ## 3. Traffic Cost Model
 
-$$
-\text{base\_travel\_time}
-=
-\left(\frac{\text{distance}}{\text{speed}}\right)
-\times 60
-\quad (\text{minutes})
-$$
+### Base Travel Time
 
-$$
-\text{traffic\_factor}
-=
-1.0 + \text{traffic\_density}
-\quad
-(\text{where } \text{traffic\_density} \in [0.0,1.0])
-$$
+```text
+base_travel_time = (distance / speed) × 60
+```
 
-$$
-\text{effective\_travel\_time}
-=
-\text{base\_travel\_time}
-\times
-\text{traffic\_factor}
-$$
+The result is measured in minutes.
+
+### Traffic Factor
+
+```text
+traffic_factor = 1.0 + traffic_density
+```
+
+where:
+
+```text
+traffic_density ∈ [0.0, 1.0]
+```
+
+### Effective Travel Time
+
+```text
+effective_travel_time = base_travel_time × traffic_factor
+```
+
+Therefore, a road with 100% traffic has a traffic factor of 2.0 and takes twice as long to traverse as the same road with 0% traffic.
 
 ---
 
@@ -78,34 +84,36 @@ Both algorithms are implemented from scratch in pure Python without third-party 
 ### Dijkstra's Algorithm
 
 - Min-priority queue using `heapq`
-- Track accumulated cost $g(n)$
+- Tracks accumulated cost `g(n)`
 - Dynamic predecessor map for route reconstruction
-- Tracks total nodes explored and execution runtime in milliseconds
+- Tracks total nodes explored
+- Tracks execution runtime in milliseconds
 
 ### A* Search
 
-- Evaluation function: $f(n) = g(n) + h(n)$
-- $g(n)$: Accumulated travel time in minutes
-- $h(n)$: Admissible heuristic based on Euclidean spatial grid distance scaled by the network's fastest travel time per grid unit:
+- Evaluation function: `f(n) = g(n) + h(n)`
+- `g(n)`: Accumulated travel time in minutes
+- `h(n)`: Admissible heuristic based on Euclidean spatial grid distance scaled by the network's fastest travel time per grid unit
 
-$$
-h(n)
-=
-\sqrt{(\Delta x)^2 + (\Delta y)^2}
-\times
-\min_e
-\left(
-\frac{\text{time}(e)}{\text{grid\_dist}(e)}
-\right)
-$$
+Heuristic:
 
-- Guarantees $h(n) \le h^*(n)$ (admissibility), ensuring optimal path discovery with reduced node expansion.
+```text
+h(n) = Euclidean distance × minimum travel time per grid unit
+```
+
+More specifically:
+
+```text
+h(n) = sqrt((Δx)² + (Δy)²) × min(time(e) / grid_dist(e))
+```
+
+- The heuristic is admissible, ensuring optimal path discovery while reducing unnecessary node expansion.
 
 ---
 
 ## 5. Quantitative Experimental Results (120 Controlled Scenarios)
 
-Experiments were executed across 120 test cases evaluating Low ($0-30\%$), Medium ($31-70\%$), High ($71-100\%$), and Random congestion distributions.
+Experiments were executed across 120 test cases evaluating Low (0-30%), Medium (31-70%), High (71-100%), and Random congestion distributions.
 
 ### Overall Benchmark Summary
 
@@ -127,7 +135,7 @@ Experiments were executed across 120 test cases evaluating Low ($0-30\%$), Mediu
 | **High (71-100%)** | 27.50 nodes | 18.57 nodes | -32.5% |
 | **Random (0-100%)** | 27.47 nodes | 19.73 nodes | -28.2% |
 
-Generated comparison charts:
+### Generated Comparison Charts
 
 1. `experiments/graphs/1_nodes_explored.png`
 2. `experiments/graphs/2_execution_time.png`
@@ -151,7 +159,7 @@ cd backend
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-API Documentation will be live at:
+API Documentation will be available at:
 
 `http://localhost:8000/docs`
 
@@ -197,19 +205,25 @@ We are solving the AI-based road traffic route optimization problem: finding the
 
 ### 2. Why use graph algorithms for traffic routing?
 
-Road networks naturally model as graphs where intersections are nodes and roads are weighted edges. Graph search algorithms guarantee finding mathematically optimal paths.
+Road networks naturally model as graphs where intersections are nodes and roads are weighted edges. Graph search algorithms can find mathematically optimal paths based on the defined edge costs.
 
 ### 3. What is Dijkstra's Algorithm?
 
-Dijkstra's Algorithm is an uninformed graph search algorithm that explores nodes in increasing order of accumulated path cost $g(n)$ from the start node using a min-priority queue.
+Dijkstra's Algorithm is an uninformed graph search algorithm that explores nodes in increasing order of accumulated path cost `g(n)` from the start node using a min-priority queue.
 
 ### 4. What is A* Search?
 
-A* is an informed search algorithm that evaluates nodes using $f(n) = g(n) + h(n)$, combining the known cost $g(n)$ from the start with a heuristic estimate $h(n)$ to the goal.
+A* is an informed search algorithm that evaluates nodes using:
+
+```text
+f(n) = g(n) + h(n)
+```
+
+It combines the known cost `g(n)` from the start with a heuristic estimate `h(n)` of the remaining cost to the goal.
 
 ### 5. What is the difference between Dijkstra and A*?
 
-Dijkstra expands search radially in all directions (blind search). A* uses heuristic estimates to guide search toward the destination, pruning unpromising branches and exploring fewer nodes.
+Dijkstra expands the search based only on the accumulated cost from the starting node. A* additionally uses a heuristic to guide the search toward the destination, allowing it to explore fewer nodes when the heuristic is effective.
 
 ### 6. What is a heuristic?
 
@@ -217,42 +231,43 @@ A heuristic is an estimate of the remaining cost from the current state to the g
 
 ### 7. What heuristic did you use?
 
-We used Euclidean coordinate distance scaled by the network's maximum possible speed:
+We used Euclidean coordinate distance scaled by the minimum travel-time-per-distance value in the network:
 
-$$
-h(n)
-=
-\text{distance}(n,\text{goal})
-\times
-\min_e
-\left(
-\frac{\text{cost}(e)}{\text{distance}(e)}
-\right)
-$$
+```text
+h(n) = distance(n, goal) × min(cost(e) / distance(e))
+```
+
+This provides an admissible estimate of the remaining travel cost.
 
 ### 8. Why can A* explore fewer nodes?
 
-The heuristic $h(n)$ biases node priority toward the goal, so nodes leading away from the destination receive higher $f$-values and are pushed down the priority queue.
+The heuristic `h(n)` guides the search toward the goal. Nodes that appear less promising receive higher `f(n)` values and are therefore explored later or not expanded before the optimal path is found.
 
 ### 9. Can Dijkstra and A* return the same route?
 
-Yes. When the heuristic is admissible ($h(n) \le h^*(n)$), A* is guaranteed to return the exact same optimal route cost as Dijkstra.
+Yes. When the heuristic is admissible, A* is guaranteed to find an optimal path with the same optimal path cost as Dijkstra.
 
 ### 10. How is traffic represented?
 
-Traffic density is represented as a percentage from $0\%$ (free-flow) to $100\%$ (severe congestion) for each road edge.
+Traffic density is represented as a percentage from 0% (free-flow) to 100% (severe congestion) for each road edge.
 
 ### 11. How does traffic density affect edge cost?
 
-Effective travel time is multiplied by $(1.0 + \text{traffic\_density})$. A road with $100\%$ traffic takes twice as long to traverse as a road with $0\%$ traffic.
+Effective travel time is multiplied by:
+
+```text
+1.0 + traffic_density
+```
+
+Therefore, a road with 100% traffic takes twice as long to traverse as the same road with 0% traffic.
 
 ### 12. Why does the user manually enter traffic?
 
-Manual control allows examiners and users to test congestion scenarios, simulate traffic jams on specific arteries, and witness dynamic rerouting in real time.
+Manual control allows examiners and users to test congestion scenarios, simulate traffic jams on specific roads, and witness dynamic rerouting in real time.
 
 ### 13. Why did you use 50 nodes?
 
-A 50-node $10 \times 5$ grid is large enough to demonstrate realistic multi-path routing choices while remaining visually clean and easy to explain in a viva.
+A 50-node 10 × 5 grid is large enough to demonstrate realistic multi-path routing choices while remaining visually clean and easy to explain in a viva.
 
 ### 14. How did you compare the algorithms fairly?
 
@@ -269,7 +284,7 @@ Both algorithms were run on identical start/end pairs, identical graph topology,
 
 ### 16. What is your student-designed improvement?
 
-Dynamic Traffic Rerouting: Real-time detection of traffic updates along the active route that triggers automatic weight recalculation, path re-planning, and delta analysis.
+**Dynamic Traffic Rerouting**: Real-time detection of traffic updates along the active route that triggers automatic weight recalculation, path re-planning, and delta analysis.
 
 ### 17. How does dynamic rerouting work?
 
@@ -285,4 +300,4 @@ The project uses a static custom grid topology with in-memory state rather than 
 
 ### 20. How could this be extended to real-world traffic?
 
-By integrating OpenStreetMap road networks, real-time sensor/GPS probes via MQTT or WebSockets, and predictive traffic models using Recurrent Neural Networks (LSTMs) or Graph Neural Networks (GNNs).
+The system could be extended by integrating OpenStreetMap road networks, real-time sensor/GPS probes via MQTT or WebSockets, and predictive traffic models using Recurrent Neural Networks (LSTMs) or Graph Neural Networks (GNNs).
